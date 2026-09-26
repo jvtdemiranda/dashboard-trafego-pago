@@ -4,7 +4,7 @@ Projeto de portfólio: um painel que responde a pergunta que todo dono de
 loja faz pro gestor de tráfego — **"qual anúncio está dando dinheiro?"** —
 cruzando o relatório do Meta Ads com os pedidos reais da loja.
 
-**Publicado em [dashboard-trafego-pago.vercel.app](https://dashboard-trafego-pago.vercel.app)**
+**Publicado em [dashboard-trafego-pago-seven.vercel.app](https://dashboard-trafego-pago-seven.vercel.app)**
 — atualiza sozinho a cada push na `main`.
 
 <p align="center">
