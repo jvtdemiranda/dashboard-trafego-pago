@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tráfego Pago · Alara</title>
+<meta name="description" content="Painel de tráfego pago: ROAS, CPA, funil de conversão e decisão por anúncio, cruzando o relatório do Meta Ads com os pedidos da loja.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3E%3Crect%20width='24'%20height='24'%20rx='6'%20fill='%236d4bd1'/%3E%3Cpath%20d='M5%2017l4-5%203%202%207-8'%20stroke='white'%20stroke-width='2'%20fill='none'%20stroke-linecap='round'%20stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme:light;
+    --page:#f6f6f9; --surface:#ffffff; --surface-2:#f0eff5; --border:#e3e1ec;
+    --ink:#15131f; --ink-2:#4d4960; --muted:#8a869c;
+    --brand:#6d4bd1; --brand-soft:#efeafd;
+    --gasto:#e0712c; --receita:#2f6fdc;
+    --good:#16875a; --good-bg:#e3f5ec; --warn:#a86a00; --warn-bg:#fdf1d8;
+    --bad:#c8383a; --bad-bg:#fbe7e7; --neutral-bg:#eeedf2;
+    --font:"Inter Tight","Segoe UI",system-ui,sans-serif;
+    --mono:"JetBrains Mono","SFMono-Regular",Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      color-scheme:dark;
+      --page:#141219; --surface:#1d1a25; --surface-2:#262231; --border:#312c3e;
+      --ink:#f3f1f8; --ink-2:#c1bccf; --muted:#8e889f;
+      --brand:#9b80f0; --brand-soft:#2a2340;
+      --gasto:#f08a47; --receita:#5f95ef;
+      --good:#3fc58a; --good-bg:#16302a; --warn:#e3a53a; --warn-bg:#352a14;
+      --bad:#ec6668; --bad-bg:#3a1f22; --neutral-bg:#2a2633;
+    }
+  }
+  *{box-sizing:border-box;}
+  [hidden]{display:none!important;}
+  body{margin:0; background:var(--page); color:var(--ink); font-family:var(--font); font-size:15px; line-height:1.45;}
+  h1,h2,h3{margin:0; text-wrap:balance;}
+  .num{font-family:var(--mono); font-variant-numeric:tabular-nums;}
+  .wrap{max-width:1120px; margin:0 auto; padding:0 16px;}
+
+  header.top{padding:20px 0 14px; border-bottom:1px solid var(--border); background:var(--surface);}
+  .eyebrow{font-size:11.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--brand);}
+  header.top h1{font-size:24px; font-weight:800; margin-top:4px;}
+  .periodo{font-size:13px; color:var(--ink-2); margin-top:3px;}
+
+  .controles{
+    position:sticky; top:0; z-index:10; background:var(--page);
+    border-bottom:1px solid var(--border); padding:10px 0;
+  }
+  .controles .wrap{display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; justify-content:space-between;}
+  .seg{display:inline-flex; background:var(--surface-2); border-radius:10px; padding:3px;}
+  .seg button{
+    font:600 13px var(--font); border:none; background:none; color:var(--ink-2);
+    padding:7px 12px; border-radius:8px; cursor:pointer;
+  }
+  .seg button[aria-pressed="true"]{background:var(--surface); color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.12);}
+  .margem{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-2); flex-wrap:wrap;}
+  .margem input{
+    width:64px; font:600 14px var(--mono); padding:6px 8px; border-radius:8px;
+    border:1.5px solid var(--border); background:var(--surface); color:var(--ink);
+  }
+  .margem .be{font-weight:600; color:var(--ink);}
+  .margem .limites{margin-left:6px;}
+
+  main{padding:18px 0 40px;}
+  section{margin-top:26px;}
+  section:first-child{margin-top:0;}
+  .sec-head{display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:10px;}
+  .sec-head h2{font-size:17px; font-weight:700;}
+  .sec-head p{margin:0; font-size:13px; color:var(--muted);}
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px;}
+
+  .kpis{display:grid; grid-template-columns:repeat(6,1fr); gap:10px;}
+  .kpi{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:13px 14px; min-width:0;}
+  .kpi .lbl{font-size:11.5px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em;}
+  .kpi .val{font:600 21px var(--mono); margin-top:5px; font-variant-numeric:tabular-nums; overflow-wrap:anywhere;}
+  .kpi .sub{font-size:12px; color:var(--ink-2); margin-top:3px; min-height:17px;}
+  .delta{font-weight:700;}
+  .delta.bom{color:var(--good);} .delta.ruim{color:var(--bad);} .delta.neutro{color:var(--muted);}
+  .val.bom{color:var(--good);} .val.ruim{color:var(--bad);}
+
+  .funil{display:flex; flex-direction:column; gap:9px;}
+  .etapa .topo{display:flex; justify-content:space-between; gap:10px; font-size:13.5px; margin-bottom:4px;}
+  .etapa .nome{font-weight:600;}
+  .etapa .qtd{color:var(--ink-2);}
+  .barra{height:12px; border-radius:6px; background:var(--surface-2); overflow:hidden;}
+  .barra i{display:block; height:100%; background:var(--brand); border-radius:6px; min-width:3px;}
+  .taxa{font-size:12px; color:var(--muted); margin:3px 0 0 2px;}
+  .taxa.alerta{color:var(--bad); font-weight:600;}
+
+  table.ads{width:100%; border-collapse:collapse; font-size:13.5px;}
+  table.ads th{
+    text-align:right; font-size:11.5px; font-weight:700; color:var(--muted); text-transform:uppercase;
+    letter-spacing:.03em; padding:0 10px 8px; border-bottom:1px solid var(--border); white-space:nowrap;
+  }
+  table.ads th:first-child, table.ads td:first-child{text-align:left; padding-left:0;}
+  table.ads td{padding:11px 10px; border-bottom:1px solid var(--border); text-align:right; white-space:nowrap;}
+  table.ads tr:last-child td{border-bottom:none;}
+  .ad-nome{font-weight:600; white-space:normal;}
+  .ad-camp{font-size:12px; color:var(--muted); white-space:normal; margin-top:1px;}
+  .badge{display:inline-block; font:700 11.5px var(--font); padding:4px 9px; border-radius:999px;}
+  .badge.escalar{background:var(--good-bg); color:var(--good);}
+  .badge.manter{background:var(--warn-bg); color:var(--warn);}
+  .badge.pausar{background:var(--bad-bg); color:var(--bad);}
+  .badge.poucos{background:var(--neutral-bg); color:var(--ink-2);}
+  .legenda{display:grid; grid-template-columns:repeat(2,1fr); gap:6px 18px; font-size:12.5px; color:var(--ink-2); margin-top:14px;}
+  .legenda .badge{margin-right:6px;}
+
+  .grafico svg{width:100%; display:block;}
+  .grafico text{font-family:var(--mono); fill:var(--muted);}
+  .grafico .grade{stroke:var(--border); stroke-width:1;}
+  .leg{display:flex; gap:16px; font-size:12.5px; color:var(--ink-2);}
+  .leg span{display:inline-flex; align-items:center; gap:6px;}
+  .leg i{width:14px; height:3px; border-radius:2px; display:inline-block;}
+  .leitura{font-size:13px; color:var(--ink-2); margin-top:8px; min-height:19px;}
+
+  .comparativo{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .fonte{border-radius:12px; padding:14px; background:var(--surface-2);}
+  .fonte h3{font-size:14px; font-weight:700;}
+  .fonte .quem{font-size:12px; color:var(--muted); margin-top:2px;}
+  .linha{display:flex; justify-content:space-between; gap:10px; font-size:13.5px; margin-top:9px;}
+  .linha b{font-family:var(--mono); font-weight:600;}
+  .explica{font-size:13px; color:var(--ink-2); margin:12px 0 0;}
+
+  footer.nota{font-size:12px; color:var(--muted); margin-top:30px; line-height:1.6;}
+  footer.nota a{color:var(--brand);}
+
+  @media (max-width:960px){
+    .kpis{grid-template-columns:repeat(3,1fr);}
+  }
+  @media (max-width:720px){
+    header.top h1{font-size:21px;}
+    .controles{position:static;}
+    .margem .limites{margin-left:0; flex-basis:100%;}
+    .kpis{grid-template-columns:repeat(2,1fr);}
+    .kpi .val{font-size:18px;}
+    .comparativo{grid-template-columns:1fr;}
+    .legenda{grid-template-columns:1fr;}
+    /* tabela vira lista de cartões no celular */
+    table.ads thead{display:none;}
+    table.ads, table.ads tbody, table.ads tr, table.ads td{display:block; width:100%;}
+    table.ads tr{border-bottom:1px solid var(--border); padding:12px 0; display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px 10px;}
+    table.ads tr:last-child{border-bottom:none;}
+    table.ads td{border:none; padding:0; text-align:left; white-space:normal;}
+    table.ads td:first-child{grid-column:1 / -1;}
+    table.ads td[data-rotulo]::before{content:attr(data-rotulo); display:block; font:700 10.5px var(--font); color:var(--muted); text-transform:uppercase; letter-spacing:.03em;}
+    table.ads td.decisao{grid-column:1 / -1;}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="eyebrow">Portfólio · dashboard-trafego-pago</div>
+    <h1>Tráfego pago · Alara Skincare</h1>
+    <div class="periodo" id="periodo">—</div>
+  </div>
+</header>
+
+<div class="controles">
+  <div class="wrap">
+    <div class="seg" role="group" aria-label="Período">
+      <button data-dias="7" aria-pressed="false">7 dias</button>
+      <button data-dias="14" aria-pressed="false">14 dias</button>
+      <button data-dias="30" aria-pressed="true">30 dias</button>
+      <button data-dias="60" aria-pressed="false">60 dias</button>
+    </div>
+    <label class="margem">
+      Margem do produto
+      <input type="number" id="margem" min="5" max="90" step="1" value="35" inputmode="numeric">%
+      <span class="limites">ROAS mínimo <span class="be num" id="be">—</span> · CPA máximo <span class="be num" id="cpamax">—</span></span>
+    </label>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <section>
+    <div class="sec-head">
+      <h2>Resultado do período</h2>
+      <p id="comparacao">—</p>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="lbl">Investimento</div><div class="val" id="k-gasto">—</div><div class="sub" id="d-gasto"></div></div>
+      <div class="kpi"><div class="lbl">Receita (Meta)</div><div class="val" id="k-receita">—</div><div class="sub" id="d-receita"></div></div>
+      <div class="kpi"><div class="lbl">ROAS (Meta)</div><div class="val" id="k-roas">—</div><div class="sub" id="d-roas"></div></div>
+      <div class="kpi"><div class="lbl">Compras</div><div class="val" id="k-compras">—</div><div class="sub" id="d-compras"></div></div>
+      <div class="kpi"><div class="lbl">Custo por compra</div><div class="val" id="k-cpa">—</div><div class="sub" id="d-cpa"></div></div>
+      <div class="kpi"><div class="lbl">Lucro estimado</div><div class="val" id="k-lucro">—</div><div class="sub" id="d-lucro"></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Funil de conversão</h2>
+      <p>Cada barra mostra quantos % passaram da etapa anterior</p>
+    </div>
+    <div class="card"><div class="funil" id="funil"></div></div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Anúncios</h2>
+      <p>Ordenados por investimento no período</p>
+    </div>
+    <div class="card">
+      <table class="ads">
+        <thead><tr><th>Anúncio</th><th>Invest.</th><th>CTR</th><th>CPC</th><th>Compras</th><th>CPA</th><th>ROAS</th><th>Decisão</th></tr></thead>
+        <tbody id="tabela"></tbody>
+      </table>
+      <div class="legenda">
+        <div><span class="badge escalar">Escalar</span>ROAS 30% ou mais acima do mínimo: vale colocar mais verba</div>
+        <div><span class="badge manter">Manter</span>Paga a conta, mas com pouca folga: acompanhar</div>
+        <div><span class="badge pausar">Pausar</span>ROAS abaixo do mínimo, ou já gastou 3x o CPA máximo sem trazer vendas</div>
+        <div><span class="badge poucos">Poucos dados</span>Menos de 5 compras e pouco gasto: cedo demais pra julgar</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Investimento x receita por dia</h2>
+      <div class="leg"><span><i style="background:var(--gasto)"></i>Investimento</span><span><i style="background:var(--receita)"></i>Receita (Meta)</span></div>
+    </div>
+    <div class="card grafico">
+      <div id="grafico"></div>
+      <div class="leitura num" id="leitura">Passe o dedo ou o mouse sobre o gráfico</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>O que o Meta diz x o que a loja registrou</h2>
+      <p>Mesmo período, mesmos anúncios</p>
+    </div>
+    <div class="card">
+      <div class="comparativo">
+        <div class="fonte">
+          <h3>Relatório do Meta Ads</h3>
+          <div class="quem">compras atribuídas aos anúncios</div>
+          <div class="linha"><span>Compras</span><b id="m-compras">—</b></div>
+          <div class="linha"><span>Receita</span><b id="m-receita">—</b></div>
+          <div class="linha"><span>ROAS</span><b id="m-roas">—</b></div>
+        </div>
+        <div class="fonte">
+          <h3>Pedidos na Nuvemshop</h3>
+          <div class="quem">pagos, com UTM de um dos anúncios</div>
+          <div class="linha"><span>Pedidos</span><b id="l-pedidos">—</b></div>
+          <div class="linha"><span>Receita</span><b id="l-receita">—</b></div>
+          <div class="linha"><span>ROAS</span><b id="l-roas">—</b></div>
+        </div>
+      </div>
+      <p class="explica" id="explica-atribuicao"></p>
+    </div>
+  </section>
+
+  <footer class="nota">
+    Alara Skincare é uma marca fictícia e os dados são simulados — projeto de portfólio.
+    Os arquivos de entrada seguem o formato das exportações reais do Gerenciador de Anúncios
+    do Meta e da Nuvemshop.
+    <a href="https://github.com/jvtdemiranda/dashboard-trafego-pago">Ver código no GitHub</a>
+  </footer>
+</main>
+
+<script>
+(function(){
+"use strict";
+
+var D = /*__DATA__*/;
+// meta:    [dia, anuncio, gasto, impressoes, cliques, carrinhos, checkouts, compras, valor]
+// pedidos: [dia, anuncio (-1 = sem UTM de anúncio), pago (1/0), total]
+
+var MIN_COMPRAS = 5;
+var FOLGA_ESCALAR = 1.3;
+var GASTO_SEM_RETORNO = 3;
+
+var brl = new Intl.NumberFormat("pt-BR", {style:"currency", currency:"BRL"});
+var brl0 = new Intl.NumberFormat("pt-BR", {style:"currency", currency:"BRL", minimumFractionDigits:0, maximumFractionDigits:0});
+var int = new Intl.NumberFormat("pt-BR");
+function pct(v, casas){ return (v*100).toFixed(casas === undefined ? 1 : casas).replace(".", ",") + "%"; }
+function vezes(v){ return v.toFixed(2).replace(".", ",") + "x"; }
+function dataBR(iso){ var p = iso.split("-"); return p[2] + "/" + p[1]; }
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  });
+}
+function div(a, b){ return b ? a / b : null; }
+
+var estado = {dias: 30, margem: 0.35};
+
+// ---- agregação ----
+function vazio(){ return {gasto:0, impr:0, cliques:0, carr:0, chk:0, compras:0, valor:0}; }
+function somar(t, l){
+  t.gasto += l[2]; t.impr += l[3]; t.cliques += l[4]; t.carr += l[5];
+  t.chk += l[6]; t.compras += l[7]; t.valor += l[8];
+}
+function agregar(ini, fim){
+  var total = vazio(), porAnuncio = D.anuncios.map(vazio), porDia = [];
+  for(var d = ini; d <= fim; d++) porDia.push(vazio());
+  D.meta.forEach(function(l){
+    if(l[0] < ini || l[0] > fim) return;
+    somar(total, l); somar(porAnuncio[l[1]], l); somar(porDia[l[0] - ini], l);
+  });
+  var loja = {pedidos:0, receita:0};
+  D.pedidos.forEach(function(p){
+    if(p[0] < ini || p[0] > fim || p[1] < 0 || !p[2]) return;
+    loja.pedidos++; loja.receita += p[3];
+  });
+  return {total:total, porAnuncio:porAnuncio, porDia:porDia, loja:loja};
+}
+function metricas(t, margem){
+  return {
+    roas: div(t.valor, t.gasto), cpa: div(t.gasto, t.compras),
+    ctr: div(t.cliques, t.impr), cpc: div(t.gasto, t.cliques),
+    lucro: t.valor * margem - t.gasto
+  };
+}
+// cpaMax: o máximo que dá pra pagar por venda sem prejuízo (ticket médio x
+// margem). Poucas vendas depois de gastar várias vezes esse valor já é
+// evidência suficiente de que o anúncio não funciona.
+function decisao(t, m, roasMin, cpaMax){
+  if(t.compras < MIN_COMPRAS){
+    if(t.gasto >= GASTO_SEM_RETORNO * cpaMax && (m.roas || 0) < roasMin) return ["pausar", "Pausar"];
+    return ["poucos", "Poucos dados"];
+  }
+  if(m.roas >= roasMin * FOLGA_ESCALAR) return ["escalar", "Escalar"];
+  if(m.roas >= roasMin) return ["manter", "Manter"];
+  return ["pausar", "Pausar"];
+}
+
+// ---- render ----
+function variacao(el, atual, anterior, maiorEhMelhor){
+  if(anterior === null || atual === null || anterior === 0){ el.innerHTML = ""; return; }
+  var v = (atual - anterior) / Math.abs(anterior);
+  var cls = maiorEhMelhor === null ? "neutro" : ((v >= 0) === maiorEhMelhor ? "bom" : "ruim");
+  el.innerHTML = '<span class="delta ' + cls + '">' + (v >= 0 ? "▲ " : "▼ ") + pct(Math.abs(v), 0) + '</span> vs período anterior';
+}
+
+function render(){
+  var n = D.dias.length, fim = n - 1, ini = Math.max(0, n - estado.dias);
+  var temAnterior = ini - estado.dias >= 0;
+  var atual = agregar(ini, fim);
+  var anterior = temAnterior ? agregar(ini - estado.dias, ini - 1) : null;
+  var roasMin = 1 / estado.margem;
+  var m = metricas(atual.total, estado.margem);
+  var ma = anterior ? metricas(anterior.total, estado.margem) : null;
+
+  document.getElementById("periodo").textContent =
+    "Período: " + dataBR(D.dias[ini]) + " a " + dataBR(D.dias[fim]) + "/" + D.dias[fim].slice(0,4) +
+    " · " + (fim - ini + 1) + " dias";
+  document.getElementById("be").textContent = vezes(roasMin);
+  document.getElementById("comparacao").textContent = temAnterior
+    ? "Comparado com os " + estado.dias + " dias anteriores"
+    : "Todo o histórico disponível — sem período anterior pra comparar";
+
+  var t = atual.total, ta = anterior ? anterior.total : null;
+  document.getElementById("k-gasto").textContent = brl0.format(t.gasto);
+  document.getElementById("k-receita").textContent = brl0.format(t.valor);
+  var elRoas = document.getElementById("k-roas");
+  elRoas.textContent = m.roas === null ? "—" : vezes(m.roas);
+  elRoas.className = "val " + (m.roas === null ? "" : (m.roas >= roasMin ? "bom" : "ruim"));
+  document.getElementById("k-compras").textContent = int.format(t.compras);
+  document.getElementById("k-cpa").textContent = m.cpa === null ? "—" : brl.format(m.cpa);
+  var elLucro = document.getElementById("k-lucro");
+  elLucro.textContent = brl0.format(m.lucro);
+  elLucro.className = "val " + (m.lucro >= 0 ? "bom" : "ruim");
+
+  variacao(document.getElementById("d-gasto"), t.gasto, ta && ta.gasto, null);
+  variacao(document.getElementById("d-receita"), t.valor, ta && ta.valor, true);
+  variacao(document.getElementById("d-roas"), m.roas, ma && ma.roas, true);
+  variacao(document.getElementById("d-compras"), t.compras, ta && ta.compras, true);
+  variacao(document.getElementById("d-cpa"), m.cpa, ma && ma.cpa, false);
+  variacao(document.getElementById("d-lucro"), m.lucro, ma && ma.lucro, true);
+
+  renderFunil(t);
+  var ticket = div(t.valor, t.compras) || 0;
+  var cpaMax = ticket * estado.margem;
+  document.getElementById("cpamax").textContent = brl0.format(cpaMax);
+  renderTabela(atual.porAnuncio, roasMin, cpaMax);
+  renderGrafico(atual.porDia, ini);
+  renderAtribuicao(t, atual.loja, roasMin);
+}
+
+function renderFunil(t){
+  var etapas = [
+    ["Viram o anúncio", t.impr, null, ""],
+    ["Clicaram no link", t.cliques, "CTR", "CTR abaixo de 1% costuma indicar problema no criativo ou no público"],
+    ["Adicionaram ao carrinho", t.carr, "", "Queda aqui aponta pra página de venda, preço ou oferta"],
+    ["Iniciaram o checkout", t.chk, "", "Queda aqui costuma ser frete ou prazo aparecendo no carrinho"],
+    ["Compraram", t.compras, "", "Queda aqui aponta pro pagamento: meios aceitos, erro no checkout"]
+  ];
+  // Barra = taxa de passagem da etapa anterior pra esta (não o volume
+  // absoluto: em escala linear tudo abaixo das impressões sumiria).
+  document.getElementById("funil").innerHTML = etapas.map(function(e, i){
+    var tx = i > 0 ? div(e[1], etapas[i-1][1]) : 1;
+    var largura = Math.max(0.4, (tx || 0) * 100);
+    var taxa = "";
+    if(i > 0){
+      var alerta = i === 1 && tx !== null && tx < 0.01;
+      taxa = '<div class="taxa' + (alerta ? " alerta" : "") + '">' +
+        (tx === null ? "—" : pct(tx, i === 1 ? 2 : 1)) + ' da etapa anterior' +
+        (i === 1 ? " (CTR)" : "") + ' · ' + e[3] + '</div>';
+    }
+    return '<div class="etapa"><div class="topo"><span class="nome">' + e[0] + '</span>' +
+      '<span class="qtd num">' + int.format(e[1]) + '</span></div>' +
+      '<div class="barra"><i style="width:' + largura.toFixed(2) + '%"></i></div>' + taxa + '</div>';
+  }).join("");
+}
+
+function renderTabela(porAnuncio, roasMin, cpaMax){
+  var linhas = D.anuncios.map(function(a, i){ return {a:a, t:porAnuncio[i]}; })
+    .filter(function(x){ return x.t.gasto > 0; })
+    .sort(function(x, y){ return y.t.gasto - x.t.gasto; });
+  document.getElementById("tabela").innerHTML = linhas.map(function(x){
+    var m = metricas(x.t, estado.margem), dcs = decisao(x.t, m, roasMin, cpaMax);
+    return '<tr>' +
+      '<td><div class="ad-nome">' + escapeHtml(x.a.anuncio) + '</div><div class="ad-camp">' + escapeHtml(x.a.campanha) + '</div></td>' +
+      '<td class="num" data-rotulo="Invest.">' + brl0.format(x.t.gasto) + '</td>' +
+      '<td class="num" data-rotulo="CTR">' + (m.ctr === null ? "—" : pct(m.ctr, 2)) + '</td>' +
+      '<td class="num" data-rotulo="CPC">' + (m.cpc === null ? "—" : brl.format(m.cpc)) + '</td>' +
+      '<td class="num" data-rotulo="Compras">' + int.format(x.t.compras) + '</td>' +
+      '<td class="num" data-rotulo="CPA">' + (m.cpa === null ? "—" : brl.format(m.cpa)) + '</td>' +
+      '<td class="num" data-rotulo="ROAS">' + (m.roas === null ? "—" : vezes(m.roas)) + '</td>' +
+      '<td class="decisao"><span class="badge ' + dcs[0] + '">' + dcs[1] + '</span></td>' +
+    '</tr>';
+  }).join("");
+}
+
+function renderGrafico(porDia, ini){
+  var box = document.getElementById("grafico");
+  var w = Math.max(300, box.clientWidth), h = 200, pl = 58, pr = 8, pt = 12, pb = 24;
+  var pw = w - pl - pr, ph = h - pt - pb, n = porDia.length;
+  var max = Math.max.apply(null, porDia.map(function(d){ return Math.max(d.gasto, d.valor); })) || 1;
+  function x(i){ return pl + (n === 1 ? pw / 2 : pw * i / (n - 1)); }
+  function y(v){ return pt + ph * (1 - v / max); }
+  function linha(campo, cor){
+    return '<polyline fill="none" stroke="' + cor + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="' +
+      porDia.map(function(d, i){ return x(i).toFixed(1) + "," + y(d[campo]).toFixed(1); }).join(" ") + '"/>';
+  }
+  var svg = '<svg viewBox="0 0 ' + w + ' ' + h + '" height="' + h + '" role="img" aria-label="Investimento e receita por dia">';
+  [0, 0.25, 0.5, 0.75, 1].forEach(function(f){
+    var yy = pt + ph * (1 - f);
+    svg += '<line class="grade" x1="' + pl + '" x2="' + (w - pr) + '" y1="' + yy + '" y2="' + yy + '"/>';
+    svg += '<text x="' + (pl - 6) + '" y="' + (yy + 3) + '" font-size="10" text-anchor="end">' + brl0.format(max * f) + '</text>';
+  });
+  var passos = Math.min(6, n);
+  for(var k = 0; k < passos; k++){
+    var i = Math.round(k * (n - 1) / Math.max(1, passos - 1));
+    var anc = k === 0 ? "start" : (k === passos - 1 ? "end" : "middle");
+    svg += '<text x="' + x(i) + '" y="' + (h - 6) + '" font-size="10" text-anchor="' + anc + '">' + dataBR(D.dias[ini + i]) + '</text>';
+  }
+  svg += linha("gasto", "var(--gasto)") + linha("valor", "var(--receita)");
+  svg += '<line id="cursor" stroke="var(--muted)" stroke-dasharray="3 3" y1="' + pt + '" y2="' + (pt + ph) + '" x1="-10" x2="-10"/>';
+  svg += '<rect id="alvo" x="' + pl + '" y="0" width="' + pw + '" height="' + h + '" fill="transparent"/>';
+  svg += '</svg>';
+  box.innerHTML = svg;
+
+  var cursor = document.getElementById("cursor");
+  var leitura = document.getElementById("leitura");
+  document.getElementById("alvo").addEventListener("pointermove", function(ev){
+    var r = ev.currentTarget.getBoundingClientRect();
+    var i = Math.round((ev.clientX - r.left) / r.width * (n - 1));
+    i = Math.max(0, Math.min(n - 1, i));
+    var d = porDia[i];
+    cursor.setAttribute("x1", x(i)); cursor.setAttribute("x2", x(i));
+    leitura.textContent = dataBR(D.dias[ini + i]) + " · investimento " + brl.format(d.gasto) +
+      " · receita " + brl.format(d.valor) + " · ROAS " + (d.gasto ? vezes(d.valor / d.gasto) : "—");
+  });
+}
+
+function renderAtribuicao(t, loja, roasMin){
+  var roasMeta = div(t.valor, t.gasto), roasLoja = div(loja.receita, t.gasto);
+  document.getElementById("m-compras").textContent = int.format(t.compras);
+  document.getElementById("m-receita").textContent = brl0.format(t.valor);
+  document.getElementById("m-roas").textContent = roasMeta === null ? "—" : vezes(roasMeta);
+  document.getElementById("l-pedidos").textContent = int.format(loja.pedidos);
+  document.getElementById("l-receita").textContent = brl0.format(loja.receita);
+  document.getElementById("l-roas").textContent = roasLoja === null ? "—" : vezes(roasLoja);
+
+  var texto = "O Meta conta compras de quem viu ou clicou no anúncio e comprou depois — até em outro aparelho, " +
+    "ou chegando à loja por outro caminho. A loja só liga ao anúncio o pedido que chegou com a UTM dele. " +
+    "A verdade costuma estar entre os dois números.";
+  if(roasMeta !== null && roasLoja !== null && roasMeta >= roasMin && roasLoja < roasMin){
+    texto += " Atenção: pelo Meta a conta dá lucro, mas pelos pedidos rastreados na loja fica abaixo do ROAS mínimo (" +
+      vezes(roasMin) + ") — vale investigar antes de aumentar a verba.";
+  }
+  document.getElementById("explica-atribuicao").textContent = texto;
+}
+
+// ---- controles ----
+document.querySelectorAll(".seg button").forEach(function(b){
+  b.addEventListener("click", function(){
+    document.querySelectorAll(".seg button").forEach(function(o){ o.setAttribute("aria-pressed", o === b ? "true" : "false"); });
+    estado.dias = parseInt(b.getAttribute("data-dias"), 10);
+    render();
+  });
+});
+document.getElementById("margem").addEventListener("input", function(){
+  var v = parseFloat(this.value);
+  if(!(v >= 5 && v <= 90)) return;
+  estado.margem = v / 100;
+  render();
+});
+var larguraAnterior = 0;
+window.addEventListener("resize", function(){
+  var w = document.getElementById("grafico").clientWidth;
+  if(w !== larguraAnterior){ larguraAnterior = w; render(); }
+});
+
+render();
+})();
+</script>
+</body>
+</html>

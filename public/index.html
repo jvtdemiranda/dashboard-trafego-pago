@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tráfego Pago · Alara</title>
+<meta name="description" content="Painel de tráfego pago: ROAS, CPA, funil de conversão e decisão por anúncio, cruzando o relatório do Meta Ads com os pedidos da loja.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3E%3Crect%20width='24'%20height='24'%20rx='6'%20fill='%236d4bd1'/%3E%3Cpath%20d='M5%2017l4-5%203%202%207-8'%20stroke='white'%20stroke-width='2'%20fill='none'%20stroke-linecap='round'%20stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme:light;
+    --page:#f6f6f9; --surface:#ffffff; --surface-2:#f0eff5; --border:#e3e1ec;
+    --ink:#15131f; --ink-2:#4d4960; --muted:#8a869c;
+    --brand:#6d4bd1; --brand-soft:#efeafd;
+    --gasto:#e0712c; --receita:#2f6fdc;
+    --good:#16875a; --good-bg:#e3f5ec; --warn:#a86a00; --warn-bg:#fdf1d8;
+    --bad:#c8383a; --bad-bg:#fbe7e7; --neutral-bg:#eeedf2;
+    --font:"Inter Tight","Segoe UI",system-ui,sans-serif;
+    --mono:"JetBrains Mono","SFMono-Regular",Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      color-scheme:dark;
+      --page:#141219; --surface:#1d1a25; --surface-2:#262231; --border:#312c3e;
+      --ink:#f3f1f8; --ink-2:#c1bccf; --muted:#8e889f;
+      --brand:#9b80f0; --brand-soft:#2a2340;
+      --gasto:#f08a47; --receita:#5f95ef;
+      --good:#3fc58a; --good-bg:#16302a; --warn:#e3a53a; --warn-bg:#352a14;
+      --bad:#ec6668; --bad-bg:#3a1f22; --neutral-bg:#2a2633;
+    }
+  }
+  *{box-sizing:border-box;}
+  [hidden]{display:none!important;}
+  body{margin:0; background:var(--page); color:var(--ink); font-family:var(--font); font-size:15px; line-height:1.45;}
+  h1,h2,h3{margin:0; text-wrap:balance;}
+  .num{font-family:var(--mono); font-variant-numeric:tabular-nums;}
+  .wrap{max-width:1120px; margin:0 auto; padding:0 16px;}
+
+  header.top{padding:20px 0 14px; border-bottom:1px solid var(--border); background:var(--surface);}
+  .eyebrow{font-size:11.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--brand);}
+  header.top h1{font-size:24px; font-weight:800; margin-top:4px;}
+  .periodo{font-size:13px; color:var(--ink-2); margin-top:3px;}
+
+  .controles{
+    position:sticky; top:0; z-index:10; background:var(--page);
+    border-bottom:1px solid var(--border); padding:10px 0;
+  }
+  .controles .wrap{display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; justify-content:space-between;}
+  .seg{display:inline-flex; background:var(--surface-2); border-radius:10px; padding:3px;}
+  .seg button{
+    font:600 13px var(--font); border:none; background:none; color:var(--ink-2);
+    padding:7px 12px; border-radius:8px; cursor:pointer;
+  }
+  .seg button[aria-pressed="true"]{background:var(--surface); color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.12);}
+  .margem{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-2); flex-wrap:wrap;}
+  .margem input{
+    width:64px; font:600 14px var(--mono); padding:6px 8px; border-radius:8px;
+    border:1.5px solid var(--border); background:var(--surface); color:var(--ink);
+  }
+  .margem .be{font-weight:600; color:var(--ink);}
+  .margem .limites{margin-left:6px;}
+
+  main{padding:18px 0 40px;}
+  section{margin-top:26px;}
+  section:first-child{margin-top:0;}
+  .sec-head{display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:10px;}
+  .sec-head h2{font-size:17px; font-weight:700;}
+  .sec-head p{margin:0; font-size:13px; color:var(--muted);}
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px;}
+
+  .kpis{display:grid; grid-template-columns:repeat(6,1fr); gap:10px;}
+  .kpi{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:13px 14px; min-width:0;}
+  .kpi .lbl{font-size:11.5px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em;}
+  .kpi .val{font:600 21px var(--mono); margin-top:5px; font-variant-numeric:tabular-nums; overflow-wrap:anywhere;}
+  .kpi .sub{font-size:12px; color:var(--ink-2); margin-top:3px; min-height:17px;}
+  .delta{font-weight:700;}
+  .delta.bom{color:var(--good);} .delta.ruim{color:var(--bad);} .delta.neutro{color:var(--muted);}
+  .val.bom{color:var(--good);} .val.ruim{color:var(--bad);}
+
+  .funil{display:flex; flex-direction:column; gap:9px;}
+  .etapa .topo{display:flex; justify-content:space-between; gap:10px; font-size:13.5px; margin-bottom:4px;}
+  .etapa .nome{font-weight:600;}
+  .etapa .qtd{color:var(--ink-2);}
+  .barra{height:12px; border-radius:6px; background:var(--surface-2); overflow:hidden;}
+  .barra i{display:block; height:100%; background:var(--brand); border-radius:6px; min-width:3px;}
+  .taxa{font-size:12px; color:var(--muted); margin:3px 0 0 2px;}
+  .taxa.alerta{color:var(--bad); font-weight:600;}
+
+  table.ads{width:100%; border-collapse:collapse; font-size:13.5px;}
+  table.ads th{
+    text-align:right; font-size:11.5px; font-weight:700; color:var(--muted); text-transform:uppercase;
+    letter-spacing:.03em; padding:0 10px 8px; border-bottom:1px solid var(--border); white-space:nowrap;
+  }
+  table.ads th:first-child, table.ads td:first-child{text-align:left; padding-left:0;}
+  table.ads td{padding:11px 10px; border-bottom:1px solid var(--border); text-align:right; white-space:nowrap;}
+  table.ads tr:last-child td{border-bottom:none;}
+  .ad-nome{font-weight:600; white-space:normal;}
+  .ad-camp{font-size:12px; color:var(--muted); white-space:normal; margin-top:1px;}
+  .badge{display:inline-block; font:700 11.5px var(--font); padding:4px 9px; border-radius:999px;}
+  .badge.escalar{background:var(--good-bg); color:var(--good);}
+  .badge.manter{background:var(--warn-bg); color:var(--warn);}
+  .badge.pausar{background:var(--bad-bg); color:var(--bad);}
+  .badge.poucos{background:var(--neutral-bg); color:var(--ink-2);}
+  .legenda{display:grid; grid-template-columns:repeat(2,1fr); gap:6px 18px; font-size:12.5px; color:var(--ink-2); margin-top:14px;}
+  .legenda .badge{margin-right:6px;}
+
+  .grafico svg{width:100%; display:block;}
+  .grafico text{font-family:var(--mono); fill:var(--muted);}
+  .grafico .grade{stroke:var(--border); stroke-width:1;}
+  .leg{display:flex; gap:16px; font-size:12.5px; color:var(--ink-2);}
+  .leg span{display:inline-flex; align-items:center; gap:6px;}
+  .leg i{width:14px; height:3px; border-radius:2px; display:inline-block;}
+  .leitura{font-size:13px; color:var(--ink-2); margin-top:8px; min-height:19px;}
+
+  .comparativo{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .fonte{border-radius:12px; padding:14px; background:var(--surface-2);}
+  .fonte h3{font-size:14px; font-weight:700;}
+  .fonte .quem{font-size:12px; color:var(--muted); margin-top:2px;}
+  .linha{display:flex; justify-content:space-between; gap:10px; font-size:13.5px; margin-top:9px;}
+  .linha b{font-family:var(--mono); font-weight:600;}
+  .explica{font-size:13px; color:var(--ink-2); margin:12px 0 0;}
+
+  footer.nota{font-size:12px; color:var(--muted); margin-top:30px; line-height:1.6;}
+  footer.nota a{color:var(--brand);}
+
+  @media (max-width:960px){
+    .kpis{grid-template-columns:repeat(3,1fr);}
+  }
+  @media (max-width:720px){
+    header.top h1{font-size:21px;}
+    .controles{position:static;}
+    .margem .limites{margin-left:0; flex-basis:100%;}
+    .kpis{grid-template-columns:repeat(2,1fr);}
+    .kpi .val{font-size:18px;}
+    .comparativo{grid-template-columns:1fr;}
+    .legenda{grid-template-columns:1fr;}
+    /* tabela vira lista de cartões no celular */
+    table.ads thead{display:none;}
+    table.ads, table.ads tbody, table.ads tr, table.ads td{display:block; width:100%;}
+    table.ads tr{border-bottom:1px solid var(--border); padding:12px 0; display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px 10px;}
+    table.ads tr:last-child{border-bottom:none;}
+    table.ads td{border:none; padding:0; text-align:left; white-space:normal;}
+    table.ads td:first-child{grid-column:1 / -1;}
+    table.ads td[data-rotulo]::before{content:attr(data-rotulo); display:block; font:700 10.5px var(--font); color:var(--muted); text-transform:uppercase; letter-spacing:.03em;}
+    table.ads td.decisao{grid-column:1 / -1;}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="eyebrow">Portfólio · dashboard-trafego-pago</div>
+    <h1>Tráfego pago · Alara Skincare</h1>
+    <div class="periodo" id="periodo">—</div>
+  </div>
+</header>
+
+<div class="controles">
+  <div class="wrap">
+    <div class="seg" role="group" aria-label="Período">
+      <button data-dias="7" aria-pressed="false">7 dias</button>
+      <button data-dias="14" aria-pressed="false">14 dias</button>
+      <button data-dias="30" aria-pressed="true">30 dias</button>
+      <button data-dias="60" aria-pressed="false">60 dias</button>
+    </div>
+    <label class="margem">
+      Margem do produto
+      <input type="number" id="margem" min="5" max="90" step="1" value="35" inputmode="numeric">%
+      <span class="limites">ROAS mínimo <span class="be num" id="be">—</span> · CPA máximo <span class="be num" id="cpamax">—</span></span>
+    </label>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <section>
+    <div class="sec-head">
+      <h2>Resultado do período</h2>
+      <p id="comparacao">—</p>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="lbl">Investimento</div><div class="val" id="k-gasto">—</div><div class="sub" id="d-gasto"></div></div>
+      <div class="kpi"><div class="lbl">Receita (Meta)</div><div class="val" id="k-receita">—</div><div class="sub" id="d-receita"></div></div>
+      <div class="kpi"><div class="lbl">ROAS (Meta)</div><div class="val" id="k-roas">—</div><div class="sub" id="d-roas"></div></div>
+      <div class="kpi"><div class="lbl">Compras</div><div class="val" id="k-compras">—</div><div class="sub" id="d-compras"></div></div>
+      <div class="kpi"><div class="lbl">Custo por compra</div><div class="val" id="k-cpa">—</div><div class="sub" id="d-cpa"></div></div>
+      <div class="kpi"><div class="lbl">Lucro estimado</div><div class="val" id="k-lucro">—</div><div class="sub" id="d-lucro"></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Funil de conversão</h2>
+      <p>Cada barra mostra quantos % passaram da etapa anterior</p>
+    </div>
+    <div class="card"><div class="funil" id="funil"></div></div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Anúncios</h2>
+      <p>Ordenados por investimento no período</p>
+    </div>
+    <div class="card">
+      <table class="ads">
+        <thead><tr><th>Anúncio</th><th>Invest.</th><th>CTR</th><th>CPC</th><th>Compras</th><th>CPA</th><th>ROAS</th><th>Decisão</th></tr></thead>
+        <tbody id="tabela"></tbody>
+      </table>
+      <div class="legenda">
+        <div><span class="badge escalar">Escalar</span>ROAS 30% ou mais acima do mínimo: vale colocar mais verba</div>
+        <div><span class="badge manter">Manter</span>Paga a conta, mas com pouca folga: acompanhar</div>
+        <div><span class="badge pausar">Pausar</span>ROAS abaixo do mínimo, ou já gastou 3x o CPA máximo sem trazer vendas</div>
+        <div><span class="badge poucos">Poucos dados</span>Menos de 5 compras e pouco gasto: cedo demais pra julgar</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Investimento x receita por dia</h2>
+      <div class="leg"><span><i style="background:var(--gasto)"></i>Investimento</span><span><i style="background:var(--receita)"></i>Receita (Meta)</span></div>
+    </div>
+    <div class="card grafico">
+      <div id="grafico"></div>
+      <div class="leitura num" id="leitura">Passe o dedo ou o mouse sobre o gráfico</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>O que o Meta diz x o que a loja registrou</h2>
+      <p>Mesmo período, mesmos anúncios</p>
+    </div>
+    <div class="card">
+      <div class="comparativo">
+        <div class="fonte">
+          <h3>Relatório do Meta Ads</h3>
+          <div class="quem">compras atribuídas aos anúncios</div>
+          <div class="linha"><span>Compras</span><b id="m-compras">—</b></div>
+          <div class="linha"><span>Receita</span><b id="m-receita">—</b></div>
+          <div class="linha"><span>ROAS</span><b id="m-roas">—</b></div>
+        </div>
+        <div class="fonte">
+          <h3>Pedidos na Nuvemshop</h3>
+          <div class="quem">pagos, com UTM de um dos anúncios</div>
+          <div class="linha"><span>Pedidos</span><b id="l-pedidos">—</b></div>
+          <div class="linha"><span>Receita</span><b id="l-receita">—</b></div>
+          <div class="linha"><span>ROAS</span><b id="l-roas">—</b></div>
+        </div>
+      </div>
+      <p class="explica" id="explica-atribuicao"></p>
+    </div>
+  </section>
+
+  <footer class="nota">
+    Alara Skincare é uma marca fictícia e os dados são simulados — projeto de portfólio.
+    Os arquivos de entrada seguem o formato das exportações reais do Gerenciador de Anúncios
+    do Meta e da Nuvemshop.
+    <a href="https://github.com/jvtdemiranda/dashboard-trafego-pago">Ver código no GitHub</a>
+  </footer>
+</main>
+
+<script>
+(function(){
+"use strict";
+
+var D = {"dias":["2026-07-23","2026-07-24","2026-07-25","2026-07-26","2026-07-27","2026-07-28","2026-07-29","2026-07-30","2026-07-31","2026-08-01","2026-08-02","2026-08-03","2026-08-04","2026-08-05","2026-08-06","2026-08-07","2026-08-08","2026-08-09","2026-08-10","2026-08-11","2026-08-12","2026-08-13","2026-08-14","2026-08-15","2026-08-16","2026-08-17","2026-08-18","2026-08-19","2026-08-20","2026-08-21","2026-08-22","2026-08-23","2026-08-24","2026-08-25","2026-08-26","2026-08-27","2026-08-28","2026-08-29","2026-08-30","2026-08-31","2026-09-01","2026-09-02","2026-09-03","2026-09-04","2026-09-05","2026-09-06","2026-09-07","2026-09-08","2026-09-09","2026-09-10","2026-09-11","2026-09-12","2026-09-13","2026-09-14","2026-09-15","2026-09-16","2026-09-17","2026-09-18","2026-09-19","2026-09-20"],"anuncios":[{"campanha":"[PROSPECÇÃO] Mulheres 25-44 · interesses skincare","anuncio":"Vídeo depoimento 30s"},{"campanha":"[PROSPECÇÃO] Mulheres 25-44 · interesses skincare","anuncio":"Carrossel antes e depois"},{"campanha":"[PROSPECÇÃO] Mulheres 25-44 · interesses skincare","anuncio":"Imagem oferta 31% off"},{"campanha":"[REMARKETING] Visitou o site nos últimos 30 dias","anuncio":"Vídeo como usar"},{"campanha":"[REMARKETING] Visitou o site nos últimos 30 dias","anuncio":"Imagem última chance"},{"campanha":"[TESTE] Lookalike 1% compradoras","anuncio":"Vídeo depoimento 30s"},{"campanha":"[TESTE] Lookalike 1% compradoras","anuncio":"Imagem kit presente"}],"meta":[[0,0,48.55,1758,26,2,2,1,259.8],[0,1,32.45,1181,13,1,0,0,0.0],[0,2,29.86,1018,21,2,2,0,0.0],[0,3,21.74,486,7,3,3,3,519.6],[0,4,15.88,372,5,1,1,1,129.9],[1,0,46.83,1679,29,2,1,1,259.8],[1,1,36.85,1198,10,2,1,1,259.8],[1,2,28.87,1040,29,2,1,1,259.8],[1,3,23.01,488,8,2,1,1,129.9],[1,4,14.74,303,4,0,0,0,0.0],[2,0,59.96,2030,37,4,4,4,779.4],[2,1,36.88,1125,15,1,0,0,0.0],[2,2,32.37,1010,31,1,0,0,0.0],[2,3,25.55,591,18,3,2,2,259.8],[2,4,15.5,337,1,0,0,0,0.0],[3,0,48.42,1519,22,5,5,4,649.5],[3,1,38.6,1428,15,0,0,0,0.0],[3,2,32.99,1091,36,2,1,1,259.8],[3,3,23.62,529,7,3,3,3,389.7],[3,4,18.47,395,6,3,2,2,389.7],[4,0,52.56,1914,26,3,2,2,259.8],[4,1,39.56,1414,9,0,0,0,0.0],[4,2,35.61,1261,35,1,0,0,0.0],[4,3,21.6,463,9,2,2,1,129.9],[4,4,14.54,329,3,0,0,0,0.0],[5,0,61.29,2023,27,8,3,1,129.9],[5,1,31.23,946,13,0,0,0,0.0],[5,2,28.3,953,37,1,0,0,0.0],[5,3,25.0,514,8,1,1,1,259.8],[5,4,17.03,363,7,2,1,1,129.9],[6,0,65.04,2096,29,3,2,1,129.9],[6,1,33.13,1060,11,2,2,1,259.8],[6,2,32.05,1079,24,3,2,1,129.9],[6,3,22.78,477,13,1,0,0,0.0],[6,4,15.62,340,7,1,1,0,0.0],[7,0,56.09,1860,30,4,2,1,259.8],[7,1,37.65,1187,16,3,0,0,0.0],[7,2,31.74,1030,25,2,0,0,0.0],[7,3,26.57,550,12,4,0,0,0.0],[7,4,15.08,306,3,0,0,0,0.0],[8,0,55.12,1793,29,2,1,1,129.9],[8,1,40.32,1316,19,1,1,1,129.9],[8,2,30.91,1046,30,2,2,1,129.9],[8,3,22.49,515,10,2,1,1,259.8],[8,4,18.25,428,2,1,0,0,0.0],[9,0,55.12,1806,29,1,0,0,0.0],[9,1,33.7,1159,12,1,0,0,0.0],[9,2,33.63,1168,26,0,0,0,0.0],[9,3,24.9,610,11,4,3,2,259.8],[9,4,16.95,400,7,0,0,0,0.0],[10,0,55.61,1786,20,3,3,3,389.7],[10,1,39.88,1386,22,2,0,0,0.0],[10,2,31.32,1109,36,3,2,1,129.9],[10,3,22.55,477,11,3,1,1,129.9],[10,4,15.36,322,3,1,0,0,0.0],[11,0,54.13,1858,35,2,0,0,0.0],[11,1,41.45,1403,12,1,1,1,129.9],[11,2,27.54,842,17,1,0,0,0.0],[11,3,24.93,567,9,4,1,1,259.8],[11,4,16.14,346,7,0,0,0,0.0],[12,0,55.29,1897,35,4,4,3,389.7],[12,1,40.81,1339,15,2,0,0,0.0],[12,2,29.91,989,20,0,0,0,0.0],[12,3,23.79,587,13,3,2,1,259.8],[12,4,16.72,380,5,2,1,1,129.9],[13,0,51.98,1792,23,1,0,0,0.0],[13,1,31.87,1163,10,0,0,0,0.0],[13,2,25.71,803,17,1,0,0,0.0],[13,3,21.55,468,12,5,3,3,389.7],[13,4,15.96,325,1,0,0,0,0.0],[14,0,56.46,1793,25,4,3,3,519.6],[14,1,34.22,1054,14,1,1,1,389.7],[14,2,24.81,886,24,0,0,0,0.0],[14,3,22.59,491,5,2,2,2,259.8],[14,4,16.19,385,7,0,0,0,0.0],[15,0,48.03,1499,20,0,0,0,0.0],[15,1,36.48,1146,13,1,1,1,129.9],[15,2,34.86,1229,37,3,0,0,0.0],[15,3,27.05,658,9,2,0,0,0.0],[15,4,16.55,361,5,0,0,0,0.0],[16,0,54.72,1810,35,5,3,1,259.8],[16,1,33.69,1219,17,4,4,2,389.7],[16,2,29.53,955,26,1,0,0,0.0],[16,3,22.06,451,12,0,0,0,0.0],[16,4,14.46,336,9,2,1,1,259.8],[17,0,57.67,2003,38,5,2,2,259.8],[17,1,43.69,1524,17,0,0,0,0.0],[17,2,30.18,1090,30,1,1,0,0.0],[17,3,25.12,605,12,2,1,1,129.9],[17,4,16.16,332,6,2,2,2,259.8],[18,0,54.84,1746,35,2,1,1,129.9],[18,1,37.34,1312,18,4,3,1,129.9],[18,2,35.28,1185,21,2,1,0,0.0],[18,3,21.38,453,9,1,0,0,0.0],[18,4,15.53,343,3,0,0,0,0.0],[19,0,59.24,1839,26,1,0,0,0.0],[19,1,33.33,1065,8,1,1,1,129.9],[19,2,25.48,805,21,2,1,1,129.9],[19,3,23.95,508,8,4,4,3,779.4],[19,4,15.7,328,1,0,0,0,0.0],[20,0,63.14,2032,23,0,0,0,0.0],[20,1,36.53,1165,12,1,0,0,0.0],[20,2,31.71,965,24,3,2,1,129.9],[20,3,27.09,566,7,3,3,2,259.8],[20,4,14.68,317,2,1,1,1,129.9],[21,0,49.49,1540,22,2,2,2,389.7],[21,1,36.95,1141,12,1,0,0,0.0],[21,2,32.79,1157,22,2,1,0,0.0],[21,3,21.76,461,14,0,0,0,0.0],[21,4,15.4,373,3,0,0,0,0.0],[22,0,53.44,1927,26,2,0,0,0.0],[22,1,34.0,1225,23,2,1,1,129.9],[22,2,25.24,833,24,3,2,2,259.8],[22,3,25.02,514,10,4,0,0,0.0],[22,4,16.7,364,6,2,1,1,129.9],[23,0,56.12,1760,37,7,4,4,779.4],[23,1,37.18,1166,15,1,1,1,259.8],[23,2,36.35,1226,35,1,1,0,0.0],[23,3,19.7,486,8,2,2,1,129.9],[23,4,17.0,388,8,4,2,0,0.0],[24,0,54.31,1696,30,1,1,0,0.0],[24,1,39.3,1306,19,2,2,1,129.9],[24,2,37.37,1289,37,4,1,1,129.9],[24,3,23.79,570,10,2,0,0,0.0],[24,4,13.91,317,6,1,1,1,129.9],[25,0,52.1,1895,38,3,1,1,129.9],[25,1,33.38,1120,11,2,1,1,129.9],[25,2,26.74,956,24,0,0,0,0.0],[25,3,23.67,538,8,1,1,1,129.9],[25,4,15.28,324,5,2,1,1,129.9],[26,0,46.77,1720,26,3,2,2,259.8],[26,1,33.97,1221,14,2,1,0,0.0],[26,2,28.8,975,31,2,1,0,0.0],[26,3,25.16,618,16,4,3,3,519.6],[26,4,15.29,309,7,1,0,0,0.0],[27,0,49.39,1633,32,2,1,0,0.0],[27,1,39.48,1261,22,2,2,0,0.0],[27,2,30.54,1079,23,1,1,0,0.0],[27,3,26.08,610,9,2,1,1,129.9],[27,4,16.42,374,2,0,0,0,0.0],[28,0,53.59,1857,32,5,5,4,779.4],[28,1,36.74,1238,20,3,3,3,389.7],[28,2,34.03,1034,28,1,0,0,0.0],[28,3,26.05,548,13,2,1,0,0.0],[28,4,17.88,429,7,0,0,0,0.0],[29,0,58.14,1773,34,4,2,2,259.8],[29,1,31.73,1163,11,1,0,0,0.0],[29,2,31.37,1108,24,3,1,0,0.0],[29,3,27.05,581,11,3,3,2,259.8],[29,4,16.16,330,4,0,0,0,0.0],[30,0,57.96,1989,33,5,3,2,259.8],[30,1,37.9,1212,21,0,0,0,0.0],[30,2,33.55,1115,30,1,1,1,129.9],[30,3,22.52,547,10,1,0,0,0.0],[30,4,19.22,464,6,0,0,0,0.0],[30,5,55.2,2194,33,2,0,0,0.0],[30,6,5.04,180,1,0,0,0,0.0],[31,0,56.73,2067,29,4,3,2,259.8],[31,1,31.61,1164,12,2,2,2,259.8],[31,2,24.86,876,15,2,0,0,0.0],[31,3,23.25,476,8,3,2,2,389.7],[31,4,16.29,369,5,0,0,0,0.0],[31,5,51.57,2101,34,6,2,2,259.8],[31,6,4.86,205,2,1,0,0,0.0],[32,0,50.09,1630,19,3,3,3,389.7],[32,1,32.84,1046,10,1,1,1,129.9],[32,2,27.62,1007,19,2,1,1,129.9],[32,3,26.42,607,6,1,1,0,0.0],[32,4,14.69,298,4,0,0,0,0.0],[32,5,55.56,2012,29,4,2,2,259.8],[32,6,3.69,152,0,0,0,0,0.0],[33,0,55.54,1989,24,0,0,0,0.0],[33,1,41.28,1476,15,3,2,2,259.8],[33,2,29.1,929,28,1,1,1,129.9],[33,3,24.9,524,7,0,0,0,0.0],[33,4,15.94,359,6,1,0,0,0.0],[33,5,59.38,2354,30,1,1,1,259.8],[33,6,4.33,165,2,0,0,0,0.0],[34,0,53.74,1903,23,0,0,0,0.0],[34,1,38.36,1181,10,2,1,1,129.9],[34,2,31.88,1147,28,2,1,1,129.9],[34,3,27.56,603,16,3,1,0,0.0],[34,4,15.23,318,1,0,0,0,0.0],[34,5,56.59,2088,30,2,2,2,389.7],[34,6,5.51,223,0,0,0,0,0.0],[35,0,49.41,1726,23,1,0,0,0.0],[35,1,40.62,1273,12,1,1,1,129.9],[35,2,31.17,966,29,2,0,0,0.0],[35,3,22.07,484,7,1,1,1,129.9],[35,4,16.64,360,3,0,0,0,0.0],[35,5,61.34,2209,30,3,2,2,389.7],[35,6,4.42,165,1,0,0,0,0.0],[36,0,59.29,2046,23,2,2,1,129.9],[36,1,36.89,1149,11,1,1,0,0.0],[36,2,29.35,976,22,2,1,0,0.0],[36,3,22.86,553,8,3,3,2,389.7],[36,4,14.55,306,4,0,0,0,0.0],[36,5,50.85,2064,22,4,1,0,0.0],[36,6,3.92,151,2,1,1,1,129.9],[37,0,55.15,1831,21,1,0,0,0.0],[37,1,38.42,1311,16,3,2,2,389.7],[37,2,31.52,1126,35,0,0,0,0.0],[37,3,24.28,525,8,2,1,1,129.9],[37,4,15.76,376,5,0,0,0,0.0],[37,5,54.93,2310,29,4,4,3,519.6],[37,6,4.14,175,2,0,0,0,0.0],[38,0,53.41,1757,23,2,1,1,129.9],[38,1,38.44,1382,19,0,0,0,0.0],[38,2,30.65,1008,32,0,0,0,0.0],[38,3,23.49,530,12,1,1,1,129.9],[38,4,16.59,344,2,1,0,0,0.0],[38,5,50.12,2088,40,9,5,4,519.6],[38,6,4.24,169,3,0,0,0,0.0],[39,0,63.8,2074,34,3,3,2,259.8],[39,1,36.58,1250,11,1,0,0,0.0],[39,2,28.5,896,21,0,0,0,0.0],[39,3,22.77,493,10,1,1,1,129.9],[39,4,13.86,314,2,0,0,0,0.0],[39,5,54.82,1943,34,4,1,1,129.9],[39,6,5.73,215,1,0,0,0,0.0],[40,0,55.82,1808,29,5,1,1,129.9],[40,1,34.95,1152,17,3,3,3,389.7],[40,2,30.52,1028,34,1,1,0,0.0],[40,3,22.0,497,9,1,1,1,259.8],[40,4,17.59,412,7,0,0,0,0.0],[40,5,53.98,2255,33,7,5,4,519.6],[40,6,4.5,183,2,0,0,0,0.0],[41,0,56.28,1849,29,3,1,1,259.8],[41,1,34.96,1204,22,2,2,2,259.8],[41,2,23.3,822,15,1,0,0,0.0],[41,3,27.78,668,5,0,0,0,0.0],[41,4,15.34,327,5,1,0,0,0.0],[41,5,57.17,2064,32,0,0,0,0.0],[41,6,4.5,191,0,0,0,0,0.0],[42,0,49.72,1810,28,0,0,0,0.0],[42,1,36.25,1115,9,0,0,0,0.0],[42,2,23.48,793,17,0,0,0,0.0],[42,3,24.33,569,14,3,2,2,259.8],[42,4,14.82,365,4,0,0,0,0.0],[42,5,48.98,1860,32,5,2,1,129.9],[42,6,5.06,199,0,0,0,0,0.0],[43,0,44.09,1602,30,3,3,2,259.8],[43,1,34.99,1247,19,1,1,0,0.0],[43,2,29.35,1016,29,1,0,0,0.0],[43,3,24.2,540,14,1,1,1,129.9],[43,4,14.75,344,7,1,1,1,129.9],[43,5,51.26,1976,21,1,0,0,0.0],[43,6,4.47,161,1,0,0,0,0.0],[44,0,51.82,1581,35,3,1,1,129.9],[44,1,37.55,1167,18,4,3,1,129.9],[44,2,37.01,1336,40,0,0,0,0.0],[44,3,20.89,453,7,3,2,1,129.9],[44,4,15.57,331,3,1,1,1,129.9],[44,5,51.99,2022,25,3,2,1,129.9],[44,6,4.53,186,1,0,0,0,0.0],[45,0,54.07,1943,39,2,1,1,389.7],[45,1,37.37,1252,18,3,2,2,259.8],[45,2,33.41,1226,22,0,0,0,0.0],[45,3,24.55,553,4,1,1,1,129.9],[45,4,18.88,465,9,2,1,1,129.9],[45,5,60.29,2177,39,9,7,5,649.5],[45,6,4.9,190,1,0,0,0,0.0],[46,0,58.37,1831,20,3,2,1,129.9],[46,1,35.28,1155,10,1,1,1,129.9],[46,2,29.5,1031,29,2,0,0,0.0],[46,3,23.79,583,12,2,0,0,0.0],[46,4,18.36,411,5,0,0,0,0.0],[46,5,58.94,2287,31,6,3,3,389.7],[46,6,6.05,249,1,1,1,1,129.9],[47,0,53.68,1976,27,5,4,3,649.5],[47,1,40.49,1252,20,5,3,2,259.8],[47,2,33.71,1197,38,0,0,0,0.0],[47,3,23.29,573,7,0,0,0,0.0],[47,4,16.47,392,7,0,0,0,0.0],[47,5,50.06,1920,24,1,0,0,0.0],[47,6,4.87,185,1,0,0,0,0.0],[48,0,53.32,1837,26,2,2,2,389.7],[48,1,40.5,1317,13,3,1,1,129.9],[48,2,36.36,1106,31,2,2,2,259.8],[48,3,23.51,498,7,0,0,0,0.0],[48,4,16.12,396,2,0,0,0,0.0],[48,5,55.34,2165,30,1,0,0,0.0],[48,6,4.98,185,1,0,0,0,0.0],[49,0,57.93,2075,26,2,1,1,129.9],[49,1,37.36,1180,11,1,0,0,0.0],[49,2,28.33,895,21,1,0,0,0.0],[49,3,23.14,519,6,0,0,0,0.0],[49,4,18.96,387,9,1,1,0,0.0],[49,5,58.18,2136,37,3,3,3,389.7],[49,6,4.95,200,0,0,0,0,0.0],[50,0,51.41,1707,20,1,1,1,129.9],[50,1,38.23,1234,18,4,4,2,259.8],[50,2,25.62,933,22,0,0,0,0.0],[50,3,24.81,572,11,2,2,2,519.6],[50,4,15.26,326,5,1,0,0,0.0],[50,5,54.11,2139,39,5,4,4,519.6],[50,6,3.96,150,1,0,0,0,0.0],[51,0,59.59,2166,34,4,2,2,519.6],[51,1,34.48,1110,11,1,1,1,129.9],[51,2,32.04,1117,41,3,0,0,0.0],[51,3,23.42,481,8,2,2,2,519.6],[51,4,17.78,380,4,0,0,0,0.0],[51,5,59.52,2142,28,1,1,0,0.0],[51,6,5.36,227,0,0,0,0,0.0],[52,0,47.76,1620,27,4,3,3,389.7],[52,1,36.55,1216,12,0,0,0,0.0],[52,2,30.12,1005,21,1,1,0,0.0],[52,3,25.37,598,12,2,2,1,129.9],[52,4,17.19,416,5,1,1,1,129.9],[52,5,56.43,2226,32,6,3,3,649.5],[52,6,5.09,188,1,0,0,0,0.0],[53,0,52.6,1677,20,1,1,0,0.0],[53,1,38.9,1260,11,1,0,0,0.0],[53,2,28.56,908,20,2,1,1,129.9],[53,3,25.26,592,10,2,1,1,129.9],[53,4,16.36,397,7,0,0,0,0.0],[53,5,57.39,2287,25,4,2,2,519.6],[53,6,5.39,193,1,0,0,0,0.0],[54,0,48.82,1623,31,4,3,2,259.8],[54,1,33.62,1139,8,1,1,1,129.9],[54,2,31.91,1158,25,2,1,1,129.9],[54,3,23.22,498,7,0,0,0,0.0],[54,4,17.08,401,1,1,0,0,0.0],[54,5,59.31,2106,34,5,3,2,519.6],[54,6,4.9,180,3,0,0,0,0.0],[55,0,46.08,1412,25,6,4,2,259.8],[55,1,35.03,1094,9,0,0,0,0.0],[55,2,30.0,955,23,0,0,0,0.0],[55,3,22.59,457,5,1,1,1,259.8],[55,4,17.02,414,7,2,1,0,0.0],[55,5,56.67,2333,37,8,5,4,519.6],[55,6,4.88,193,1,0,0,0,0.0],[56,0,52.23,1617,22,3,3,3,389.7],[56,1,31.76,1084,11,2,1,0,0.0],[56,2,25.52,943,23,1,1,1,129.9],[56,3,23.35,566,13,5,5,4,909.3],[56,4,13.53,298,5,0,0,0,0.0],[56,5,52.68,1852,19,0,0,0,0.0],[56,6,4.6,196,1,0,0,0,0.0],[57,0,59.19,1867,25,4,3,3,649.5],[57,1,37.28,1184,13,1,1,1,129.9],[57,2,32.81,1011,28,2,1,1,129.9],[57,3,22.81,497,6,1,1,1,129.9],[57,4,19.12,420,3,0,0,0,0.0],[57,5,49.42,2016,30,3,2,0,0.0],[57,6,4.78,182,2,0,0,0,0.0],[58,0,58.95,1945,31,3,1,1,129.9],[58,1,43.46,1437,16,3,3,2,389.7],[58,2,28.7,910,22,1,0,0,0.0],[58,3,24.37,520,8,4,1,0,0.0],[58,4,17.39,418,5,0,0,0,0.0],[58,5,60.59,2530,32,6,4,2,259.8],[58,6,4.82,183,1,0,0,0,0.0],[59,0,52.19,1815,30,3,2,1,129.9],[59,1,36.6,1315,19,2,1,1,129.9],[59,2,35.51,1267,29,0,0,0,0.0],[59,3,25.76,586,16,2,2,2,389.7],[59,4,13.89,280,5,0,0,0,0.0],[59,5,50.31,2062,21,2,1,0,0.0],[59,6,4.85,197,2,0,0,0,0.0]],"pedidos":[[0,0,0,259.8],[0,3,1,129.9],[0,3,0,259.8],[0,3,1,129.9],[0,4,1,129.9],[1,0,1,259.8],[1,1,1,259.8],[1,2,1,259.8],[1,3,1,129.9],[2,0,1,129.9],[2,0,1,259.8],[2,0,1,129.9],[2,3,1,129.9],[3,0,1,259.8],[3,0,1,129.9],[3,0,1,129.9],[3,2,1,259.8],[3,3,1,129.9],[3,3,1,129.9],[3,4,1,129.9],[3,4,1,259.8],[4,0,1,129.9],[4,3,1,129.9],[5,0,1,129.9],[5,4,1,129.9],[6,0,1,129.9],[6,1,1,259.8],[6,2,1,129.9],[8,0,1,129.9],[8,2,1,129.9],[8,3,1,259.8],[9,3,1,129.9],[9,3,1,129.9],[10,0,1,129.9],[10,3,1,129.9],[11,1,1,129.9],[12,0,1,129.9],[12,0,1,129.9],[12,0,1,129.9],[12,3,1,259.8],[13,3,1,129.9],[14,0,1,129.9],[14,1,0,389.7],[14,3,1,129.9],[14,3,1,129.9],[15,1,1,129.9],[16,0,1,259.8],[16,1,1,129.9],[16,1,1,259.8],[16,4,1,259.8],[17,0,1,129.9],[17,3,1,129.9],[17,4,1,129.9],[17,4,1,129.9],[18,0,1,129.9],[18,1,1,129.9],[19,1,1,129.9],[19,2,1,129.9],[19,3,1,259.8],[20,2,1,129.9],[20,3,1,129.9],[20,4,1,129.9],[21,0,1,129.9],[21,0,1,259.8],[22,2,1,129.9],[22,4,0,129.9],[23,0,1,259.8],[23,0,1,129.9],[23,0,1,129.9],[23,0,1,259.8],[23,1,1,259.8],[23,3,1,129.9],[24,1,1,129.9],[24,2,1,129.9],[25,3,1,129.9],[26,0,1,129.9],[26,0,1,129.9],[26,3,1,259.8],[28,0,1,129.9],[28,0,1,129.9],[28,0,1,259.8],[28,1,1,129.9],[29,0,1,129.9],[29,0,1,129.9],[29,3,1,129.9],[29,3,1,129.9],[30,0,1,129.9],[30,0,1,129.9],[30,2,1,129.9],[31,0,1,129.9],[31,0,1,129.9],[31,1,1,129.9],[31,1,1,129.9],[31,3,1,259.8],[31,3,1,129.9],[31,5,1,129.9],[32,0,1,129.9],[32,0,1,129.9],[32,2,1,129.9],[32,5,1,129.9],[32,5,1,129.9],[33,1,1,129.9],[33,2,1,129.9],[33,5,1,259.8],[34,1,1,129.9],[35,1,1,129.9],[35,3,1,129.9],[35,5,1,259.8],[35,5,0,129.9],[36,0,1,129.9],[36,3,0,129.9],[37,1,1,129.9],[37,3,1,129.9],[37,5,1,129.9],[37,5,1,259.8],[37,5,1,129.9],[38,0,1,129.9],[38,3,1,129.9],[38,5,1,129.9],[38,5,1,129.9],[38,5,1,129.9],[38,5,1,129.9],[39,0,1,129.9],[39,0,1,129.9],[40,1,1,129.9],[40,1,1,129.9],[40,1,1,129.9],[40,3,1,259.8],[40,5,1,129.9],[41,0,1,259.8],[41,1,1,129.9],[43,0,1,129.9],[43,0,1,129.9],[43,3,1,129.9],[43,4,1,129.9],[44,4,0,129.9],[44,5,0,129.9],[45,1,0,129.9],[45,1,1,129.9],[45,5,1,129.9],[45,5,0,129.9],[45,5,1,129.9],[45,5,1,129.9],[45,5,1,129.9],[46,1,1,129.9],[46,5,1,129.9],[46,5,1,129.9],[46,5,1,129.9],[46,6,1,129.9],[47,0,1,259.8],[47,0,0,259.8],[47,0,1,129.9],[47,1,1,129.9],[48,0,1,259.8],[48,0,1,129.9],[48,1,1,129.9],[48,2,1,129.9],[48,2,1,129.9],[49,0,1,129.9],[49,5,1,129.9],[50,0,1,129.9],[50,1,1,129.9],[50,3,1,389.7],[50,3,1,129.9],[50,5,1,129.9],[50,5,1,129.9],[51,0,1,389.7],[51,3,1,129.9],[51,3,1,389.7],[52,0,0,129.9],[52,0,1,129.9],[52,4,1,129.9],[52,5,1,389.7],[52,5,1,129.9],[52,5,1,129.9],[53,2,1,129.9],[53,3,1,129.9],[53,5,1,129.9],[53,5,1,389.7],[54,0,1,129.9],[54,0,1,129.9],[54,1,1,129.9],[54,2,1,129.9],[54,5,1,259.8],[54,5,1,259.8],[55,0,1,129.9],[55,3,1,259.8],[55,5,1,129.9],[55,5,1,129.9],[55,5,1,129.9],[56,0,1,129.9],[56,2,1,129.9],[56,3,1,129.9],[56,3,1,129.9],[56,3,1,389.7],[56,3,1,259.8],[57,0,1,129.9],[57,0,1,259.8],[57,0,1,259.8],[57,1,1,129.9],[57,2,1,129.9],[57,3,1,129.9],[58,0,1,129.9],[58,1,1,129.9],[58,5,1,129.9],[59,0,1,129.9],[59,1,1,129.9],[59,3,1,129.9],[59,3,1,259.8]],"pedidos_sem_anuncio":0};
+// meta:    [dia, anuncio, gasto, impressoes, cliques, carrinhos, checkouts, compras, valor]
+// pedidos: [dia, anuncio (-1 = sem UTM de anúncio), pago (1/0), total]
+
+var MIN_COMPRAS = 5;
+var FOLGA_ESCALAR = 1.3;
+var GASTO_SEM_RETORNO = 3;
+
+var brl = new Intl.NumberFormat("pt-BR", {style:"currency", currency:"BRL"});
+var brl0 = new Intl.NumberFormat("pt-BR", {style:"currency", currency:"BRL", minimumFractionDigits:0, maximumFractionDigits:0});
+var int = new Intl.NumberFormat("pt-BR");
+function pct(v, casas){ return (v*100).toFixed(casas === undefined ? 1 : casas).replace(".", ",") + "%"; }
+function vezes(v){ return v.toFixed(2).replace(".", ",") + "x"; }
+function dataBR(iso){ var p = iso.split("-"); return p[2] + "/" + p[1]; }
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  });
+}
+function div(a, b){ return b ? a / b : null; }
+
+var estado = {dias: 30, margem: 0.35};
+
+// ---- agregação ----
+function vazio(){ return {gasto:0, impr:0, cliques:0, carr:0, chk:0, compras:0, valor:0}; }
+function somar(t, l){
+  t.gasto += l[2]; t.impr += l[3]; t.cliques += l[4]; t.carr += l[5];
+  t.chk += l[6]; t.compras += l[7]; t.valor += l[8];
+}
+function agregar(ini, fim){
+  var total = vazio(), porAnuncio = D.anuncios.map(vazio), porDia = [];
+  for(var d = ini; d <= fim; d++) porDia.push(vazio());
+  D.meta.forEach(function(l){
+    if(l[0] < ini || l[0] > fim) return;
+    somar(total, l); somar(porAnuncio[l[1]], l); somar(porDia[l[0] - ini], l);
+  });
+  var loja = {pedidos:0, receita:0};
+  D.pedidos.forEach(function(p){
+    if(p[0] < ini || p[0] > fim || p[1] < 0 || !p[2]) return;
+    loja.pedidos++; loja.receita += p[3];
+  });
+  return {total:total, porAnuncio:porAnuncio, porDia:porDia, loja:loja};
+}
+function metricas(t, margem){
+  return {
+    roas: div(t.valor, t.gasto), cpa: div(t.gasto, t.compras),
+    ctr: div(t.cliques, t.impr), cpc: div(t.gasto, t.cliques),
+    lucro: t.valor * margem - t.gasto
+  };
+}
+// cpaMax: o máximo que dá pra pagar por venda sem prejuízo (ticket médio x
+// margem). Poucas vendas depois de gastar várias vezes esse valor já é
+// evidência suficiente de que o anúncio não funciona.
+function decisao(t, m, roasMin, cpaMax){
+  if(t.compras < MIN_COMPRAS){
+    if(t.gasto >= GASTO_SEM_RETORNO * cpaMax && (m.roas || 0) < roasMin) return ["pausar", "Pausar"];
+    return ["poucos", "Poucos dados"];
+  }
+  if(m.roas >= roasMin * FOLGA_ESCALAR) return ["escalar", "Escalar"];
+  if(m.roas >= roasMin) return ["manter", "Manter"];
+  return ["pausar", "Pausar"];
+}
+
+// ---- render ----
+function variacao(el, atual, anterior, maiorEhMelhor){
+  if(anterior === null || atual === null || anterior === 0){ el.innerHTML = ""; return; }
+  var v = (atual - anterior) / Math.abs(anterior);
+  var cls = maiorEhMelhor === null ? "neutro" : ((v >= 0) === maiorEhMelhor ? "bom" : "ruim");
+  el.innerHTML = '<span class="delta ' + cls + '">' + (v >= 0 ? "▲ " : "▼ ") + pct(Math.abs(v), 0) + '</span> vs período anterior';
+}
+
+function render(){
+  var n = D.dias.length, fim = n - 1, ini = Math.max(0, n - estado.dias);
+  var temAnterior = ini - estado.dias >= 0;
+  var atual = agregar(ini, fim);
+  var anterior = temAnterior ? agregar(ini - estado.dias, ini - 1) : null;
+  var roasMin = 1 / estado.margem;
+  var m = metricas(atual.total, estado.margem);
+  var ma = anterior ? metricas(anterior.total, estado.margem) : null;
+
+  document.getElementById("periodo").textContent =
+    "Período: " + dataBR(D.dias[ini]) + " a " + dataBR(D.dias[fim]) + "/" + D.dias[fim].slice(0,4) +
+    " · " + (fim - ini + 1) + " dias";
+  document.getElementById("be").textContent = vezes(roasMin);
+  document.getElementById("comparacao").textContent = temAnterior
+    ? "Comparado com os " + estado.dias + " dias anteriores"
+    : "Todo o histórico disponível — sem período anterior pra comparar";
+
+  var t = atual.total, ta = anterior ? anterior.total : null;
+  document.getElementById("k-gasto").textContent = brl0.format(t.gasto);
+  document.getElementById("k-receita").textContent = brl0.format(t.valor);
+  var elRoas = document.getElementById("k-roas");
+  elRoas.textContent = m.roas === null ? "—" : vezes(m.roas);
+  elRoas.className = "val " + (m.roas === null ? "" : (m.roas >= roasMin ? "bom" : "ruim"));
+  document.getElementById("k-compras").textContent = int.format(t.compras);
+  document.getElementById("k-cpa").textContent = m.cpa === null ? "—" : brl.format(m.cpa);
+  var elLucro = document.getElementById("k-lucro");
+  elLucro.textContent = brl0.format(m.lucro);
+  elLucro.className = "val " + (m.lucro >= 0 ? "bom" : "ruim");
+
+  variacao(document.getElementById("d-gasto"), t.gasto, ta && ta.gasto, null);
+  variacao(document.getElementById("d-receita"), t.valor, ta && ta.valor, true);
+  variacao(document.getElementById("d-roas"), m.roas, ma && ma.roas, true);
+  variacao(document.getElementById("d-compras"), t.compras, ta && ta.compras, true);
+  variacao(document.getElementById("d-cpa"), m.cpa, ma && ma.cpa, false);
+  variacao(document.getElementById("d-lucro"), m.lucro, ma && ma.lucro, true);
+
+  renderFunil(t);
+  var ticket = div(t.valor, t.compras) || 0;
+  var cpaMax = ticket * estado.margem;
+  document.getElementById("cpamax").textContent = brl0.format(cpaMax);
+  renderTabela(atual.porAnuncio, roasMin, cpaMax);
+  renderGrafico(atual.porDia, ini);
+  renderAtribuicao(t, atual.loja, roasMin);
+}
+
+function renderFunil(t){
+  var etapas = [
+    ["Viram o anúncio", t.impr, null, ""],
+    ["Clicaram no link", t.cliques, "CTR", "CTR abaixo de 1% costuma indicar problema no criativo ou no público"],
+    ["Adicionaram ao carrinho", t.carr, "", "Queda aqui aponta pra página de venda, preço ou oferta"],
+    ["Iniciaram o checkout", t.chk, "", "Queda aqui costuma ser frete ou prazo aparecendo no carrinho"],
+    ["Compraram", t.compras, "", "Queda aqui aponta pro pagamento: meios aceitos, erro no checkout"]
+  ];
+  // Barra = taxa de passagem da etapa anterior pra esta (não o volume
+  // absoluto: em escala linear tudo abaixo das impressões sumiria).
+  document.getElementById("funil").innerHTML = etapas.map(function(e, i){
+    var tx = i > 0 ? div(e[1], etapas[i-1][1]) : 1;
+    var largura = Math.max(0.4, (tx || 0) * 100);
+    var taxa = "";
+    if(i > 0){
+      var alerta = i === 1 && tx !== null && tx < 0.01;
+      taxa = '<div class="taxa' + (alerta ? " alerta" : "") + '">' +
+        (tx === null ? "—" : pct(tx, i === 1 ? 2 : 1)) + ' da etapa anterior' +
+        (i === 1 ? " (CTR)" : "") + ' · ' + e[3] + '</div>';
+    }
+    return '<div class="etapa"><div class="topo"><span class="nome">' + e[0] + '</span>' +
+      '<span class="qtd num">' + int.format(e[1]) + '</span></div>' +
+      '<div class="barra"><i style="width:' + largura.toFixed(2) + '%"></i></div>' + taxa + '</div>';
+  }).join("");
+}
+
+function renderTabela(porAnuncio, roasMin, cpaMax){
+  var linhas = D.anuncios.map(function(a, i){ return {a:a, t:porAnuncio[i]}; })
+    .filter(function(x){ return x.t.gasto > 0; })
+    .sort(function(x, y){ return y.t.gasto - x.t.gasto; });
+  document.getElementById("tabela").innerHTML = linhas.map(function(x){
+    var m = metricas(x.t, estado.margem), dcs = decisao(x.t, m, roasMin, cpaMax);
+    return '<tr>' +
+      '<td><div class="ad-nome">' + escapeHtml(x.a.anuncio) + '</div><div class="ad-camp">' + escapeHtml(x.a.campanha) + '</div></td>' +
+      '<td class="num" data-rotulo="Invest.">' + brl0.format(x.t.gasto) + '</td>' +
+      '<td class="num" data-rotulo="CTR">' + (m.ctr === null ? "—" : pct(m.ctr, 2)) + '</td>' +
+      '<td class="num" data-rotulo="CPC">' + (m.cpc === null ? "—" : brl.format(m.cpc)) + '</td>' +
+      '<td class="num" data-rotulo="Compras">' + int.format(x.t.compras) + '</td>' +
+      '<td class="num" data-rotulo="CPA">' + (m.cpa === null ? "—" : brl.format(m.cpa)) + '</td>' +
+      '<td class="num" data-rotulo="ROAS">' + (m.roas === null ? "—" : vezes(m.roas)) + '</td>' +
+      '<td class="decisao"><span class="badge ' + dcs[0] + '">' + dcs[1] + '</span></td>' +
+    '</tr>';
+  }).join("");
+}
+
+function renderGrafico(porDia, ini){
+  var box = document.getElementById("grafico");
+  var w = Math.max(300, box.clientWidth), h = 200, pl = 58, pr = 8, pt = 12, pb = 24;
+  var pw = w - pl - pr, ph = h - pt - pb, n = porDia.length;
+  var max = Math.max.apply(null, porDia.map(function(d){ return Math.max(d.gasto, d.valor); })) || 1;
+  function x(i){ return pl + (n === 1 ? pw / 2 : pw * i / (n - 1)); }
+  function y(v){ return pt + ph * (1 - v / max); }
+  function linha(campo, cor){
+    return '<polyline fill="none" stroke="' + cor + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="' +
+      porDia.map(function(d, i){ return x(i).toFixed(1) + "," + y(d[campo]).toFixed(1); }).join(" ") + '"/>';
+  }
+  var svg = '<svg viewBox="0 0 ' + w + ' ' + h + '" height="' + h + '" role="img" aria-label="Investimento e receita por dia">';
+  [0, 0.25, 0.5, 0.75, 1].forEach(function(f){
+    var yy = pt + ph * (1 - f);
+    svg += '<line class="grade" x1="' + pl + '" x2="' + (w - pr) + '" y1="' + yy + '" y2="' + yy + '"/>';
+    svg += '<text x="' + (pl - 6) + '" y="' + (yy + 3) + '" font-size="10" text-anchor="end">' + brl0.format(max * f) + '</text>';
+  });
+  var passos = Math.min(6, n);
+  for(var k = 0; k < passos; k++){
+    var i = Math.round(k * (n - 1) / Math.max(1, passos - 1));
+    var anc = k === 0 ? "start" : (k === passos - 1 ? "end" : "middle");
+    svg += '<text x="' + x(i) + '" y="' + (h - 6) + '" font-size="10" text-anchor="' + anc + '">' + dataBR(D.dias[ini + i]) + '</text>';
+  }
+  svg += linha("gasto", "var(--gasto)") + linha("valor", "var(--receita)");
+  svg += '<line id="cursor" stroke="var(--muted)" stroke-dasharray="3 3" y1="' + pt + '" y2="' + (pt + ph) + '" x1="-10" x2="-10"/>';
+  svg += '<rect id="alvo" x="' + pl + '" y="0" width="' + pw + '" height="' + h + '" fill="transparent"/>';
+  svg += '</svg>';
+  box.innerHTML = svg;
+
+  var cursor = document.getElementById("cursor");
+  var leitura = document.getElementById("leitura");
+  document.getElementById("alvo").addEventListener("pointermove", function(ev){
+    var r = ev.currentTarget.getBoundingClientRect();
+    var i = Math.round((ev.clientX - r.left) / r.width * (n - 1));
+    i = Math.max(0, Math.min(n - 1, i));
+    var d = porDia[i];
+    cursor.setAttribute("x1", x(i)); cursor.setAttribute("x2", x(i));
+    leitura.textContent = dataBR(D.dias[ini + i]) + " · investimento " + brl.format(d.gasto) +
+      " · receita " + brl.format(d.valor) + " · ROAS " + (d.gasto ? vezes(d.valor / d.gasto) : "—");
+  });
+}
+
+function renderAtribuicao(t, loja, roasMin){
+  var roasMeta = div(t.valor, t.gasto), roasLoja = div(loja.receita, t.gasto);
+  document.getElementById("m-compras").textContent = int.format(t.compras);
+  document.getElementById("m-receita").textContent = brl0.format(t.valor);
+  document.getElementById("m-roas").textContent = roasMeta === null ? "—" : vezes(roasMeta);
+  document.getElementById("l-pedidos").textContent = int.format(loja.pedidos);
+  document.getElementById("l-receita").textContent = brl0.format(loja.receita);
+  document.getElementById("l-roas").textContent = roasLoja === null ? "—" : vezes(roasLoja);
+
+  var texto = "O Meta conta compras de quem viu ou clicou no anúncio e comprou depois — até em outro aparelho, " +
+    "ou chegando à loja por outro caminho. A loja só liga ao anúncio o pedido que chegou com a UTM dele. " +
+    "A verdade costuma estar entre os dois números.";
+  if(roasMeta !== null && roasLoja !== null && roasMeta >= roasMin && roasLoja < roasMin){
+    texto += " Atenção: pelo Meta a conta dá lucro, mas pelos pedidos rastreados na loja fica abaixo do ROAS mínimo (" +
+      vezes(roasMin) + ") — vale investigar antes de aumentar a verba.";
+  }
+  document.getElementById("explica-atribuicao").textContent = texto;
+}
+
+// ---- controles ----
+document.querySelectorAll(".seg button").forEach(function(b){
+  b.addEventListener("click", function(){
+    document.querySelectorAll(".seg button").forEach(function(o){ o.setAttribute("aria-pressed", o === b ? "true" : "false"); });
+    estado.dias = parseInt(b.getAttribute("data-dias"), 10);
+    render();
+  });
+});
+document.getElementById("margem").addEventListener("input", function(){
+  var v = parseFloat(this.value);
+  if(!(v >= 5 && v <= 90)) return;
+  estado.margem = v / 100;
+  render();
+});
+var larguraAnterior = 0;
+window.addEventListener("resize", function(){
+  var w = document.getElementById("grafico").clientWidth;
+  if(w !== larguraAnterior){ larguraAnterior = w; render(); }
+});
+
+render();
+})();
+</script>
+</body>
+</html>

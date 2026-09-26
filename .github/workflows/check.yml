@@ -1,0 +1,40 @@
+name: Check
+
+# Dados e painel são 100% reproduzíveis (período fixo, semente fixa, só
+# biblioteca padrão do Python): este check regenera tudo do zero e falha
+# se o resultado for diferente do que está commitado — pega tanto dado
+# editado à mão quanto public/index.html esquecido desatualizado.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reproduzivel:
+    name: Dados e painel batem com o que está commitado
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Regenerar dados e painel
+        run: |
+          set -e
+          cd scripts
+          python gerar_dados.py
+          python gerar_dashboard_html.py
+
+      - name: Comparar com o que está commitado
+        run: |
+          if ! git diff --quiet -- data public; then
+            echo "::error::data/ ou public/ diferente do gerado pelos scripts. Rode os dois scripts e comite o resultado."
+            git diff --stat -- data public
+            exit 1
+          fi
