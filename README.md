@@ -24,11 +24,12 @@ cruzando o relatório do Meta Ads com os pedidos reais da loja.
 
 ## Por que esse projeto
 
-As vagas de gestor de tráfego no Workana pedem, quase sempre, a mesma
-entrega além das campanhas: **relatórios semanais claros**, acompanhando
-os indicadores e sugerindo melhorias. Ferramentas prontas (Reportei,
-por exemplo) fazem relatório bonito, mas repetem os números do Meta — não
-dizem se o anúncio dá lucro pro produto *daquela* loja.
+As vagas de gestor de tráfego que encontrei no Workana costumam pedir,
+além das campanhas, **relatórios semanais claros**, acompanhando os
+indicadores e sugerindo melhorias. O diferencial que busquei aqui é
+levar em conta a margem do produto *daquela* loja e conferir o relatório
+do Meta contra os pedidos reais — os dois pontos em que um relatório que
+só repete as métricas da plataforma pode enganar.
 
 Este projeto continua o [projeto 4](https://github.com/jvtdemiranda/landing-produto-trafego-pago)
 (página de venda da mesma marca fictícia, Alara): lá, a página grava de
@@ -53,10 +54,10 @@ Cada número do painel responde uma pergunta de negócio:
   se ele já gastou 3 vezes esse valor e quase não vendeu, não precisa
   esperar mais pra pausar.
 - **Funil** — impressões → cliques → carrinho → checkout → compra. Cada
-  etapa aponta um problema diferente: CTR baixo (abaixo de ~1%) é
-  criativo ou público errado; muita gente clica e não põe no carrinho é
-  a página ou a oferta; desistência entre carrinho e checkout costuma ser
-  frete ou prazo.
+  etapa aponta um problema diferente: CTR baixo (abaixo de ~1%) costuma
+  indicar criativo ou público errado; muita gente clicando e pouca
+  colocando no carrinho aponta pra página ou oferta; desistência entre
+  carrinho e checkout costuma ser frete ou prazo.
 - **CTR alto não é sinônimo de venda.** No exemplo, o anúncio "Imagem
   oferta 31% off" tem o maior CTR da conta (2,57%) e o pior ROAS (1,44x):
   o "31% off" atrai clique curioso de quem não compra. Olhando só CTR,
@@ -88,6 +89,14 @@ Cada número do painel responde uma pergunta de negócio:
 frase. Os limites (30%, 5 vendas, 3x) ficam em constantes no começo do
 JavaScript do painel, fáceis de ajustar.
 
+Ela tem limites que o gestor precisa conhecer: **"escalar" não significa
+que dá pra multiplicar a verba sem fim.** O remarketing, por exemplo, tem
+o melhor ROAS da conta, mas fala só com quem já visitou o site — é um
+público pequeno, e mais verba ali mostra o mesmo anúncio mais vezes pras
+mesmas pessoas, com retorno cada vez menor. E um aumento grande de verba
+de uma vez costuma piorar o resultado por uns dias enquanto o algoritmo
+do Meta reaprende; o usual é subir aos poucos.
+
 ## Como funciona
 
 ```
@@ -115,7 +124,11 @@ Sem dependências externas: só a biblioteca padrão do Python.
 de Anúncios, exportar o relatório com detalhamento por dia e por
 anúncio (colunas de valor usado, impressões, cliques no link, adições ao
 carrinho, finalizações de compra iniciadas, compras e valor de conversão);
-na Nuvemshop, exportar os pedidos com os campos de UTM.
+na Nuvemshop, exportar os pedidos com os campos de UTM. A leitura aguenta
+as variações de uma exportação real: células em branco (o Meta deixa
+vazio o que não aconteceu no dia), número com vírgula ou ponto decimal
+(depende do idioma da conta), ponto de milhar e dias sem gasto (que o
+Meta omite). Se faltar alguma coluna, o script para e diz qual.
 
 ## Decisões de projeto
 
@@ -154,11 +167,38 @@ na Nuvemshop, exportar os pedidos com os campos de UTM.
    R$ 779...) estavam dentro da área do gráfico e eram cortados pelas
    linhas; foram pra uma margem própria à esquerda.
 
+Uma revisão geral antes de publicar encontrou mais estes — os mais
+sérios, porque só apareceriam com dados reais:
+
+4. **Célula vazia derrubava o script.** O Meta exporta em branco as
+   métricas que não aconteceram no dia (um dia sem compra vem com
+   "Compras" vazio, não "0"). Os dados simulados sempre tinham números, e
+   a primeira exportação real quebraria a leitura.
+5. **Valor 100 vezes maior, sem aviso.** A leitura só entendia o formato
+   brasileiro (`48,55`). Numa conta do Meta configurada em inglês, que
+   exporta `48.55`, o ponto era descartado como separador de milhar e o
+   gasto virava R$ 4.855 — erro silencioso, sem mensagem nenhuma.
+6. **"Últimos 7 dias" cobrindo 8.** O Meta não exporta dias sem gasto.
+   Os dias do painel vinham só das datas presentes no arquivo, então um
+   dia faltando fazia a janela de 7 dias pular um dia e comparar
+   períodos de tamanhos diferentes. Agora o calendário é contínuo.
+7. **Brecha de segurança pela coluna de data.** Nomes de anúncio já eram
+   escapados, mas o texto da coluna de data ia direto para os rótulos do
+   gráfico. Testei com uma "data" contendo código (`<img onerror=...>`) e
+   ele executava na página — o mesmo tipo de falha (XSS) corrigido nos
+   projetos 1 e 3. Agora toda data é validada na leitura: qualquer coisa
+   que não seja data para o script com erro, em vez de chegar à página.
+8. **Leitura do gráfico com valores de outro período.** Ao trocar o
+   período, o texto abaixo do gráfico continuava mostrando o último dia
+   consultado no período anterior; e no celular, tocar no gráfico (sem
+   arrastar) não mostrava nada.
+
 Testes feitos: os números da tela conferidos contra um cálculo
-independente direto nos CSVs; nomes de anúncio com HTML/script
+independente direto nos CSVs; cada um dos casos 4 a 8 reproduzido na
+versão anterior e conferido depois da correção; nomes de anúncio com HTML/script
 malicioso (não executa — tudo que vem do CSV é escapado); sem rolagem
-horizontal de 320px a 1280px; dados idênticos gerados em Python 3.11 e
-3.12.
+horizontal de 320px a 1280px; tema claro e escuro; dados idênticos
+gerados em Python 3.11 e 3.12.
 
 ## Stack
 

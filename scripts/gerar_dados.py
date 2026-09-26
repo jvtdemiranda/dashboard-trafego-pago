@@ -23,8 +23,6 @@ import os
 import random
 from datetime import date, timedelta
 
-random.seed(2026)
-
 FIM = date(2026, 9, 20)
 DIAS = 60
 INICIO = FIM - timedelta(days=DIAS - 1)
@@ -77,6 +75,7 @@ def br(valor: float) -> str:
 
 
 def simular():
+    random.seed(2026)
     linhas_meta, pedidos = [], []
     numero_pedido = 10231
     for d in range(DIAS):

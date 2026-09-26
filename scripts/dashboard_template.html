@@ -72,8 +72,9 @@
   .card{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px;}
 
   .kpis{display:grid; grid-template-columns:repeat(6,1fr); gap:10px;}
-  .kpi{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:13px 14px; min-width:0;}
-  .kpi .lbl{font-size:11.5px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em;}
+  .kpi{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:13px 14px; min-width:0; display:flex; flex-direction:column;}
+  /* flex:1 no rótulo: se um rótulo quebra linha, os valores da mesma fileira continuam alinhados */
+  .kpi .lbl{flex:1;font-size:11.5px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em;}
   .kpi .val{font:600 21px var(--mono); margin-top:5px; font-variant-numeric:tabular-nums; overflow-wrap:anywhere;}
   .kpi .sub{font-size:12px; color:var(--ink-2); margin-top:3px; min-height:17px;}
   .delta{font-weight:700;}
@@ -169,7 +170,8 @@
     </div>
     <label class="margem">
       Margem do produto
-      <input type="number" id="margem" min="5" max="90" step="1" value="35" inputmode="numeric">%
+      <input type="number" id="margem" min="5" max="90" step="1" value="35" inputmode="numeric"
+        title="O que sobra de cada venda depois do custo do produto, impostos, taxa do cartão e frete — antes de pagar o anúncio">%
       <span class="limites">ROAS mínimo <span class="be num" id="be">—</span> · CPA máximo <span class="be num" id="cpamax">—</span></span>
     </label>
   </div>
@@ -186,9 +188,9 @@
       <div class="kpi"><div class="lbl">Investimento</div><div class="val" id="k-gasto">—</div><div class="sub" id="d-gasto"></div></div>
       <div class="kpi"><div class="lbl">Receita (Meta)</div><div class="val" id="k-receita">—</div><div class="sub" id="d-receita"></div></div>
       <div class="kpi"><div class="lbl">ROAS (Meta)</div><div class="val" id="k-roas">—</div><div class="sub" id="d-roas"></div></div>
-      <div class="kpi"><div class="lbl">Compras</div><div class="val" id="k-compras">—</div><div class="sub" id="d-compras"></div></div>
+      <div class="kpi"><div class="lbl">Compras (Meta)</div><div class="val" id="k-compras">—</div><div class="sub" id="d-compras"></div></div>
       <div class="kpi"><div class="lbl">Custo por compra</div><div class="val" id="k-cpa">—</div><div class="sub" id="d-cpa"></div></div>
-      <div class="kpi"><div class="lbl">Lucro estimado</div><div class="val" id="k-lucro">—</div><div class="sub" id="d-lucro"></div></div>
+      <div class="kpi"><div class="lbl">Lucro estimado (Meta)</div><div class="val" id="k-lucro">—</div><div class="sub" id="d-lucro"></div></div>
     </div>
   </section>
 
@@ -226,7 +228,7 @@
     </div>
     <div class="card grafico">
       <div id="grafico"></div>
-      <div class="leitura num" id="leitura">Passe o dedo ou o mouse sobre o gráfico</div>
+      <div class="leitura num" id="leitura"></div>
     </div>
   </section>
 
@@ -460,7 +462,8 @@ function renderGrafico(porDia, ini){
 
   var cursor = document.getElementById("cursor");
   var leitura = document.getElementById("leitura");
-  document.getElementById("alvo").addEventListener("pointermove", function(ev){
+  leitura.textContent = "Toque ou passe o mouse sobre o gráfico pra ver cada dia";
+  function mostrarDia(ev){
     var r = ev.currentTarget.getBoundingClientRect();
     var i = Math.round((ev.clientX - r.left) / r.width * (n - 1));
     i = Math.max(0, Math.min(n - 1, i));
@@ -468,7 +471,10 @@ function renderGrafico(porDia, ini){
     cursor.setAttribute("x1", x(i)); cursor.setAttribute("x2", x(i));
     leitura.textContent = dataBR(D.dias[ini + i]) + " · investimento " + brl.format(d.gasto) +
       " · receita " + brl.format(d.valor) + " · ROAS " + (d.gasto ? vezes(d.valor / d.gasto) : "—");
-  });
+  }
+  var alvo = document.getElementById("alvo");
+  alvo.addEventListener("pointermove", mostrarDia);
+  alvo.addEventListener("pointerdown", mostrarDia);
 }
 
 function renderAtribuicao(t, loja, roasMin){
